@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>RSIMS</title>
+	<style>
+		body {
+			background-color: #121212;
+			font-family: 'Roboto', sans-serif;
+			color: #E0E0E0;
+			margin: 0;
+			padding: 0;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			height: 100vh;
+		}
+
+		h1 {
+			font-size: 2.3rem;
+			margin-bottom: 50px;
+			color: #BB86FC;
+			text-align: center;
+		}
+
+		#page1, #page2, #page3 {
+			display: none;
+			width: 90%;
+			max-width: 600px;
+			margin: auto;
+			text-align: center;
+		}
+
+		#page1.active, #page2.active, #page3.active {
+			display: block;
+		}
+
+		button {
+			background-color: #BB86FC;
+			color: #121212;
+			border: none;
+			border-radius: 5px;
+			padding: 10px 20px;
+			font-size: 1rem;
+			cursor: pointer;
+			transition: background-color 0.3s ease;
+		}
+
+		button:hover {
+			background-color: #3700B3;
+		}
+
+		#addButton {
+			font-size: 2rem;
+			border-radius: 50%;
+			width: 60px;
+			height: 60px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			margin: 20px auto;
+		}
+
+		input {
+			width: 80%;
+			padding: 10px;
+			margin: 10px 0;
+			border-radius: 5px;
+			border: 1px solid #BB86FC;
+			background-color: #1F1F1F;
+			color: #E0E0E0;
+		}
+
+		.card {
+			background-color: #1F1F1F;
+			padding: 20px;
+			border-radius: 15px;
+			margin-top: 20px;
+			position: relative;
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+			transition: transform 0.3s ease, box-shadow 0.3s ease;
+		}
+
+		.card:hover {
+			transform: translateY(-5px);
+			box-shadow: 0 6px 30px rgba(0, 0, 0, 0.7);
+		}
+
+		.card h2 {
+			font-size: 1.5rem;
+			color: #03DAC5;
+		}
+
+		.card p {
+			font-size: 2rem;
+			color: #6EB7FF;
+		}
+
+		.card .close-btn {
+			position: absolute;
+			top: 10px;
+			right: 10px;
+			background-color: #CF6679;
+			border: none;
+			border-radius: 50%;
+			color: #E0E0E0;
+			font-size: 1.2rem;
+			width: 30px;
+			height: 30px;
+			cursor: pointer;
+			transition: background-color 0.3s ease, transform 0.3s ease;
+		}
+
+		.card .close-btn:hover {
+			background-color: #B00020;
+			transform: scale(1.1);
+		}
+
+		.notification {
+			background-color: #03DAC5;
+			color: #121212;
+			border-radius: 5px;
+			padding: 10px;
+			margin-top: 20px;
+			display: none;
+		}
+
+		.error {
+			color: #CF6679;
+			margin-top: 10px;
+			display: none;
+		}
+	</style>
+</head>
+<body>
+
+	<!-- Page 1: Heading and Add Button -->
+	<div id="page1" class="active">
+		<h1>RealTime Stock<br>& Inventory Management System</h1>
+		<button id="addButton">+</button>
+		<div id="cardsContainer"></div>
+	</div>
+
+	<!-- Page 2: Input Box ID, Box Name, and Threshold -->
+	<div id="page2">
+		<h1>Add New Box</h1>
+		<input type="text" id="boxID" placeholder="Box ID" />
+		<input type="text" id="boxName" placeholder="Box Name" />
+		<input type="number" id="thresholdValue" placeholder="Threshold Value (g)" />
+		<div id="errorMessage" class="error">Invalid Box ID. Please try again.</div>
+		<br />
+		<button id="cancelButton">Cancel</button>
+		<button id="continueButton">Add</button>
+	</div>
+
+	<!-- Notification -->
+	<div id="notification" class="notification"></div>
+
+	<!-- Firebase Setup and Script -->
+	<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+
+	<script type="module">
+		import { initializeApp } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-app.js";
+		import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-database.js";
+
+		// Firebase configuration
+		const firebaseConfig = {
+			apiKey: "API_KEY",
+			authDomain: "nothing-3d861.firebaseapp.com",
+			databaseURL: "https://nothing-3d861-default-rtdb.asia-southeast1.firebasedatabase.app",
+			projectId: "nothing-3d861",
+			storageBucket: "nothing-3d861.appspot.com",
+			messagingSenderId: "916936786599",
+			appId: "APP_ID"
+		};
+
+		// Initialize Firebase
+		const app = initializeApp(firebaseConfig);
+		const database = getDatabase(app);
+
+		// Navigation between pages
+		const page1 = document.getElementById('page1');
+		const page2 = document.getElementById('page2');
+		const addButton = document.getElementById('addButton');
+		const cancelButton = document.getElementById('cancelButton');
+		const continueButton = document.getElementById('continueButton');
+		const cardsContainer = document.getElementById('cardsContainer');
+		const notification = document.getElementById('notification');
+		const errorMessage = document.getElementById('errorMessage');
+
+		let boxName = '';
+		let thresholdValue = 0;
+		const validBoxID = "PK17RG22";
+
+		addButton.addEventListener('click', () => {
+			page1.classList.remove('active');
+			page2.classList.add('active');
+		});
+
+		cancelButton.addEventListener('click', () => {
+			page2.classList.remove('active');
+			page1.classList.add('active');
+		});
+
+		continueButton.addEventListener('click', () => {
+			const boxID = document.getElementById('boxID').value;
+			boxName = document.getElementById('boxName').value;
+			thresholdValue = document.getElementById('thresholdValue').value;
+
+			if (boxID === validBoxID) {
+				if (boxName && thresholdValue) {
+					page2.classList.remove('active');
+					page1.classList.add('active');
+					errorMessage.style.display = 'none';
+
+					// Create a new card
+					const card = document.createElement('div');
+					card.className = 'card';
+					card.innerHTML = `
+						<h2>${boxName}</h2>
+						<p id="${boxName}-weight">0g</p>
+						<button class="close-btn">&times;</button>
+					`;
+
+					// Close button functionality
+					card.querySelector('.close-btn').addEventListener('click', () => {
+						cardsContainer.removeChild(card);
+					});
+
+					cardsContainer.appendChild(card);
+
+					// Fetch and update weight from Firebase
+					const dataRef = ref(database, `Device/${boxID}`);
+					onValue(dataRef, (snapshot) => {
+						const weight = snapshot.val();
+						document.getElementById(`${boxName}-weight`).textContent = weight + 'g';
+
+						if (weight < thresholdValue) {
+							notification.textContent = `Reminder: ${boxName}  threshold!!!!!`;
+							notification.style.display = 'block';
+						} else {
+							notification.style.display = 'none';
+						}
+					});
+				}
+			} else {
+				errorMessage.style.display = 'block';
+			}
+		});
+	</script>
+
+</body>
+</html>
